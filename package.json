@@ -2,9 +2,9 @@
  "name": "alertatelegramqvapayyopoga",
  "version": "1.0.0",
  "description": "Alerta Telegram Ofertas QvaPay",
- "main": "bot.js",
+ "main": "index.js",
  "scripts": {
-  "start": "node bot.js",
+  "start": "node index.js",
   "build": "echo 'No build step'"
  },
  "author": "",
