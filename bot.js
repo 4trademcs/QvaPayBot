@@ -32,18 +32,18 @@ function parseEnvArray(value) {
 }
 
 const rawToken = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKENS;
-const rawChannelId = process.env.TELEGRAM_CHANNEL_ID || process.env.TELEGRAM_CHANNEL_IDS;
+const rawOutputMessageId = process.env.TELEGRAM_OUTPUT_MESSAGE_ID || process.env.TELEGRAM_OUTPUT_MESSAGE_IDS;
 const botTokens = parseEnvArray(rawToken);
-const channelIds = parseEnvArray(rawChannelId);
+const outputMessageIds = parseEnvArray(rawOutputMessageId);
 const token = botTokens[0];
-const channelId = channelIds[0] || process.env.TELEGRAM_CHANNEL_ID;
+const outputMessageIdFallback = outputMessageIds[0] || process.env.TELEGRAM_OUTPUT_MESSAGE_ID;
 const username = process.env.QVAPAY_USERNAME || process.env.QVAPAY_USUARIO || process.env.TELEGRAM_USUARIO;
 const password = process.env.QVAPAY_PASSWORD || process.env.QVAPAY_PASS || process.env.TELEGRAM_PASSWORD;
 const autoScanSeconds = Number(process.env.AUTOMATIC_SCAN_SECONDS || process.env.TELEGRAM_INTERVALO || 60);
 const scanIntervalMs = Math.max(60000, autoScanSeconds * 1000);
 
 const bot = token
-  ? new TelegramBot(token, { polling: true })
+  ? new TelegramBot(token, { polling: false })
   : {
       start() {
         throw new Error("Falta TELEGRAM_BOT_TOKEN o TELEGRAM_BOT_TOKENS en el .env");
@@ -103,7 +103,7 @@ const defaultSupportedCoins = [
 ];
 
 function getConfiguredChannels() {
-  return channelIds.length ? channelIds : channelId ? [channelId] : [];
+  return outputMessageIds.length ? outputMessageIds : outputMessageIdFallback ? [outputMessageIdFallback] : [];
 }
 
 function maybeStartGlobalMonitor() {
@@ -188,7 +188,7 @@ async function sendArrayToTelegram(chatId, array, ordenadoPor) {
   }
 }
 
-async function processRuleSet(chatId, session, rules) {
+async function processRuleSet(chatId, session, rules, isManual = false) {
   if (!session || !rules || rules.length === 0) return;
 
   for (const rule of rules) {
@@ -217,16 +217,22 @@ async function processRuleSet(chatId, session, rules) {
       const cacheKey = `${chatId}:${type}:${coin}`;
       const previous = previousOffers.get(cacheKey) || [];
 
-      if (filteredOffers.length > 0 && compareOfferCollections(filteredOffers, previous)) {
-        previousOffers.set(cacheKey, filteredOffers);
+      if (filteredOffers.length > 0 && (isManual || compareOfferCollections(filteredOffers, previous))) {
+        if (!isManual) {
+          previousOffers.set(cacheKey, filteredOffers);
+        }
 
-        for (const targetChannel of getConfiguredChannels()) {
+        const targetChannels = isManual ? [chatId] : getConfiguredChannels();
+
+        for (const targetChannel of targetChannels) {
           await sendArrayToTelegram(
             targetChannel,
             filteredOffers,
             rule.orden === "fecha" ? "Ofertas ordenadas por fecha" : "Ofertas ordenadas por mejor ratio"
           );
         }
+      } else if (isManual && filteredOffers.length === 0) {
+        await sendMessageCanal(chatId, `📭 No hay ofertas para tu regla: ${type.toUpperCase()} ${coin}`);
       }
     } catch (error) {
       console.error(`Error procesando regla para ${chatId}:`, error.message);
@@ -458,7 +464,7 @@ function handleMessage(msg) {
     const session = sessionData.get(chatId);
     const config = getConfig(chatId);
     if (!config.active && session && config.rules.length) {
-      processRuleSet(chatId, session, config.rules);
+      processRuleSet(chatId, session, config.rules, true);
       sendMessage(chatId, "Parámetros enviados manualmente.");
       return;
     }

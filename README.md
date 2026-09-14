@@ -29,8 +29,8 @@ La configuración principal se reduce a arrays. Así evitás duplicar conceptos 
 # Arreglo principal de bots del proyecto. El primer elemento es el principal.
 TELEGRAM_BOT_TOKENS=["tu_token_principal_del_bot"]
 
-# Arreglo principal de canales. El primer elemento es el canal principal.
-TELEGRAM_CHANNEL_IDS=["-1001234567890"]
+# Arreglo principal de destinos (canales, grupos o personas).
+TELEGRAM_OUTPUT_MESSAGE_IDS=["-1001234567890", "123456789"]
 
 # Credenciales de QvaPay
 QVAPAY_USERNAME=tu_email_o_usuario_qvapay
@@ -49,19 +49,19 @@ PORT=8080
 ### Qué representa cada valor
 
 - `TELEGRAM_BOT_TOKENS`: arreglo con los tokens de Telegram. Si hay solo uno, usa una sola posición.
-- `TELEGRAM_CHANNEL_IDS`: arreglo con los IDs de canal. Si hay solo uno, usa una sola posición.
+- `TELEGRAM_OUTPUT_MESSAGE_IDS`: arreglo con los IDs de destino. Pueden ser IDs de canales (ej. `-100...`), IDs de grupos, o IDs de usuarios (personas). Si pones varios en el arreglo, a **todos** ellos les llegarán las alertas automáticamente.
 - `QVAPAY_USERNAME`: correo o usuario de inicio de sesión en QvaPay.
 - `QVAPAY_PASSWORD`: contraseña de QvaPay.
 - `AUTOMATIC_SCAN_SECONDS`: intervalo de monitoreo automático en segundos.
 - `ALLOWED_TELEGRAM_IDS`: lista blanca de usuarios de Telegram autorizados.
 - `PORT`: puerto del servidor Express.
 
-## Diferencia entre token de bot e ID de canal
+## Diferencia entre token de bot e ID de destino
 
 Es importante no mezclar estos dos conceptos:
 
 - `TELEGRAM_BOT_TOKENS`: identifica al bot y sirve para que el bot reciba mensajes.
-- `TELEGRAM_CHANNEL_IDS`: identifica el o los canales de destino donde se publican las alertas.
+- `TELEGRAM_OUTPUT_MESSAGE_IDS`: identifica el o los destinos (canales, grupos, usuarios) donde se publican las alertas automáticas.
 
 Son valores distintos y no se sustituyen entre sí.
 
@@ -81,17 +81,17 @@ Ejemplo:
 
 Ese valor va dentro de `TELEGRAM_BOT_TOKENS`.
 
-## Cómo obtener el ID del canal
+## Cómo obtener el ID de destino (canal, grupo o usuario)
 
 Usá un bot de diagnóstico como `@RawDataBot` o un bot que muestre los datos del chat.
 
-Cuando agregues el bot al canal o le mandes un mensaje desde ahí, te devolverá un valor tipo:
+Cuando agregues el bot al canal/grupo o le mandes un mensaje desde ahí, te devolverá un valor tipo:
 
 ```text
 -1001234567890
 ```
 
-Ese valor va dentro de `TELEGRAM_CHANNEL_IDS`.
+Ese valor va dentro de `TELEGRAM_OUTPUT_MESSAGE_IDS`. Si quieres enviarlo a múltiples destinos (por ejemplo a ti mismo, a un amigo y a un canal), simplemente agrégalos al arreglo separados por comas: `["123", "456", "-100789"]`.
 
 ## Cómo obtener el ID del usuario autorizado
 
@@ -215,7 +215,7 @@ Usá esto como patrón principal:
 
 ```env
 TELEGRAM_BOT_TOKENS=["..."]
-TELEGRAM_CHANNEL_IDS=["..."]
+TELEGRAM_OUTPUT_MESSAGE_IDS=["..."]
 QVAPAY_USERNAME=...
 QVAPAY_PASSWORD=...
 AUTOMATIC_SCAN_SECONDS=60
